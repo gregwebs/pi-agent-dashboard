@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { listWorkspaces, rangeIsSatisfiable, rootPackage, selectHostPeerRange, selectRange } from '../verify-published-imports.mjs';
-import { checkForbiddenPiPackages, checkPiRangeShapes, collectFailures, FORBIDDEN_PI_PACKAGES, piManifests } from '../verify-release-deps.mjs';
+import { checkForbiddenPiPackages, checkPiRangeShapes, checkRegistrySpecifiers, collectFailures, FORBIDDEN_PI_PACKAGES, piManifests } from '../verify-release-deps.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
 const DEP_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
@@ -142,12 +142,13 @@ describe('range selection (E19, E20, E21)', () => {
     for (const { name, manifest } of nonPrivate()) {
       for (const field of DEP_FIELDS) {
         for (const [dep, range] of Object.entries(manifest[field] ?? {})) {
-          // Non-semver specifiers: workspace/file/link, and an https URL tarball (server `xlsx`
-          // from the official SheetJS CDN — its version is pinned by office-preview E71 instead).
-          if (/^(workspace|file|link|https):/.test(range)) continue;
+          // Non-semver specifiers: workspace/file/link (pnpm rewrites these on
+          // publish) and `npm:` aliases, which carry their own range after the
+          // last `@` (`npm:@e965/xlsx@0.20.3` → `0.20.3`).
+          if (/^(workspace|file|link):/.test(range)) continue;
           const resolving = resolvedVersion(dep, name);
           if (!resolving) continue; // absent => unverifiable, covered by X3
-          if (!rangeIsSatisfiable(range, resolving)) violations.push(`${name} ${field}.${dep}`);
+          if (!rangeIsSatisfiable(semverRangeOf(range), resolving)) violations.push(`${name} ${field}.${dep}`);
         }
       }
     }
@@ -155,6 +156,70 @@ describe('range selection (E19, E20, E21)', () => {
     expect(violations.filter((v) => !KNOWN_PREEXISTING.includes(v)), 'new unsatisfiable range').toEqual([]);
     // None of this change's own declarations may appear, shrinkage or not.
     for (const v of violations) expect(v).not.toMatch(/\.(wouter|dagre-d3-es|@mdi\/|fastify|ajv|jiti|yaml|semver)/);
+  });
+});
+
+/**
+ * `npm:` alias → the range it carries. `npm:@scope/pkg@^1.2.3` → `^1.2.3`;
+ * an alias without an explicit range means the exact aliased version.
+ */
+function semverRangeOf(range) {
+  if (!range.startsWith('npm:')) return range;
+  const at = range.lastIndexOf('@');
+  return at > 'npm:'.length ? range.slice(at + 1) : range.slice('npm:'.length);
+}
+
+/* ------------------------------------------------------------------ *
+ * Registry-resolvable declarations (fix-npm12-remote-tarball-install)
+ * ------------------------------------------------------------------ */
+
+/**
+ * A URL-tarball or git dependency makes every `install -g` of our packages fail
+ * on current pnpm/npm, and no consumer-side setting can rescue it (pnpm reads
+ * `blockExoticSubdeps` only from `pnpm-workspace.yaml`; a `-g` install has no
+ * workspace). The gate is manifest-level because that is the whole blast
+ * radius: one such specifier anywhere in a published runtime field. It caught
+ * `xlsx` = the SheetJS CDN tarball in `packages/server`.
+ */
+describe('no exotic specifiers in published runtime deps (E1)', () => {
+  const manifest = (deps, extra = {}) => [{ path: 'packages/server/package.json', pkg: { dependencies: deps, ...extra } }];
+
+  it('fails a URL tarball, naming the manifest and field', () => {
+    const failures = checkRegistrySpecifiers(
+      manifest({ xlsx: 'https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz' }),
+    );
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toContain('packages/server/package.json');
+    expect(failures[0]).toContain('dependencies.xlsx');
+  });
+
+  it('fails a git remote in any runtime field', () => {
+    for (const spec of ['git+https://github.com/a/b.git', 'github:a/b', 'git@github.com:a/b.git#v1']) {
+      const field = 'optionalDependencies';
+      const failures = checkRegistrySpecifiers([{ path: 'p', pkg: { [field]: { dep: spec } } }]);
+      expect(failures, spec).toHaveLength(1);
+      expect(failures[0]).toContain(`${field}.dep`);
+    }
+  });
+
+  it('passes an npm: alias, a registry range and the workspace protocols', () => {
+    const ok = ['npm:@e965/xlsx@0.20.3', '^8.18.0', 'workspace:*', 'file:../x.tgz', 'link:../y'];
+    expect(checkRegistrySpecifiers(manifest(Object.fromEntries(ok.map((s, i) => [`d${i}`, s]))))).toEqual([]);
+  });
+
+  it('skips private manifests and devDependencies — consumers install neither', () => {
+    const url = 'https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz';
+    expect(checkRegistrySpecifiers([{ path: 'p', pkg: { private: true, dependencies: { x: url } } }])).toEqual([]);
+    expect(checkRegistrySpecifiers([{ path: 'p', pkg: { devDependencies: { x: url } } }])).toEqual([]);
+  });
+
+  it('the published tree declares no URL/git dependency', () => {
+    expect(checkRegistrySpecifiers(piManifests(REPO_ROOT))).toEqual([]);
+  });
+
+  it('collectFailures reports it too, so the pre-release gate fails', () => {
+    // The real tree is clean; the check must still be wired into the gate.
+    expect(collectFailures({ repoRoot: REPO_ROOT }).filter((f) => f.startsWith('Exotic:'))).toEqual([]);
   });
 });
 

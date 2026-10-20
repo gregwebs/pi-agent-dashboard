@@ -3,11 +3,11 @@
  * pipeline's version stamping (`publish.yml`).
  *
  * `npm version --workspaces` reifies the whole tree after bumping. Under the
- * `npm@latest` the publish job installs for OIDC, that reify refuses the
- * server's remote-tarball dep (`xlsx@https://cdn.sheetjs.com/...`) with
- * EALLOWREMOTE, failing the v0.9.0 publish before anything was published.
- * `npm pkg set version=` writes the field only (no reify, no prepare) —
- * the same choice `_electron-build.yml` already made.
+ * `npm@latest` the publish job installs for OIDC, that reify refused a
+ * remote-tarball dep (`xlsx@https://cdn.sheetjs.com/...`, since replaced by a
+ * registry alias) with EALLOWREMOTE, failing the v0.9.0 publish before anything
+ * was published. `npm pkg set version=` writes the field only (no reify, no
+ * prepare) — the same choice `_electron-build.yml` already made.
  */
 
 import fs from "node:fs";

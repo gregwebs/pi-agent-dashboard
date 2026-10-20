@@ -15,7 +15,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { isUsableNodeVersion } from "../../packages/shared/src/node-version.ts";
-import { freePort, makeCtx, PKG, readyOut, REPO_ROOT, SCRIPT } from "./helpers/ensure-dashboard-harness.mjs";
+import { freePort, makeCtx, PKG, REPO_ROOT, readyOut, SCRIPT } from "./helpers/ensure-dashboard-harness.mjs";
 
 vi.setConfig({ testTimeout: 90_000 });
 
@@ -315,7 +315,7 @@ describe("launch sources", () => {
 // ───────────────────────────── consented install (E24–E27) ─────────────────────────────
 
 describe("consented install", () => {
-  it("E24: global install with the override on npm only; the CLI starts without it", async () => {
+  it("E24: global install runs the plain command; the CLI starts without an override", async () => {
     const ctx = sandbox({ cli: false });
     const port = await freePort();
     const r = await ctx.run(["--install"], { PI_DASHBOARD_PORT: String(port) });
@@ -323,7 +323,7 @@ describe("consented install", () => {
     expect(r.stdout).toBe(`STATUS=started\nBASE=http://localhost:${port}\nINSTALL=global\n`);
     const install = ctx.calls("npm").find((c) => c.argv.startsWith("install"));
     expect(install.argv).toBe(`install -g ${PKG}`);
-    expect(install.allowRemote).toBe("all");
+    expect(install.allowRemote).toBe("");
     const cli = ctx.calls("global-cli");
     expect(cli).toHaveLength(1);
     expect(cli[0].argv).toBe(`start --port ${port}`);
@@ -602,7 +602,7 @@ describe("error handling", () => {
     expect(r.stderr).toContain("server.log");
   });
 
-  it("X8: failed global install → prefix hint, npm exec with the override, npx start without it", async () => {
+  it("X8: failed global install → prefix hint, plain npm exec, npx start without an override", async () => {
     const ctx = sandbox({ cli: false });
     const port = await freePort();
     const r = await ctx.run(["--install"], { PI_DASHBOARD_PORT: String(port), STUB_NPM_INSTALL_EXIT: "1" });
@@ -613,7 +613,7 @@ describe("error handling", () => {
     expect(r.stderr).toContain("non-durable");
     const exec = ctx.calls("npm").find((c) => c.argv.startsWith("exec"));
     expect(exec.argv).toBe(`exec --yes --package=${PKG} -- node -e 0`);
-    expect(exec.allowRemote).toBe("all");
+    expect(exec.allowRemote).toBe("");
     const npx = ctx.calls("npx");
     expect(npx).toHaveLength(1);
     expect(npx[0].argv).toBe(`--yes ${PKG} start --port ${port}`);

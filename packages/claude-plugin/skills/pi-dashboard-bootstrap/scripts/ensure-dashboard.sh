@@ -460,7 +460,7 @@ do_install() {
   fi
 
   log "Installing $PKG globally (about 1 GB, about a minute)..."
-  if npm_config_allow_remote=all "$NPM" install -g "$PKG" 1>&2; then
+  if "$NPM" install -g "$PKG" 1>&2; then
     pre=$("$NPM" prefix -g 2>/dev/null)
     cli=$(command -v pi-dashboard 2>/dev/null)
     is_abs_exec "$cli" || cli=""
@@ -488,7 +488,7 @@ do_install() {
   log "Hint: configure a user-writable npm prefix, then re-run:"
   log "  npm config set prefix ~/.npm-global   and add ~/.npm-global/bin to PATH"
   log "Falling back to a download into the npm cache (non-durable)."
-  if ! npm_config_allow_remote=all "$NPM" exec --yes --package="$PKG" -- node -e 0 1>&2; then
+  if ! "$NPM" exec --yes --package="$PKG" -- node -e 0 1>&2; then
     die failed 1 "Could not fetch $PKG into the npm cache either."
   fi
   NPX=$(command -v npx 2>/dev/null)

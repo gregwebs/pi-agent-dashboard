@@ -94,6 +94,8 @@ pi-dashboard
 # open http://localhost:8000
 ```
 
+> **pnpm users on 0.9.0–0.10.0:** both releases pin `xlsx` to a remote tarball, which pnpm rejects (`ERR_PNPM_EXOTIC_SUBDEP`). Install with `pnpm add -g --config.block-exotic-subdeps=false @blackbelt-technology/pi-agent-dashboard`, or use npm ≤ 11. The release after 0.10.0 needs no flags. See [docs/faq.md](docs/faq.md#how-do-i-install-with-pnpm).
+
 If pi is already installed, the bridge-extension flow is equivalent:
 
 ```bash

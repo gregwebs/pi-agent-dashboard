@@ -232,6 +232,39 @@ export function checkForbiddenPiPackages(manifests) {
 }
 
 /**
+ * A dependency resolved from a URL tarball or a git remote — "exotic" — cannot
+ * be installed by a consumer of our published packages. pnpm rejects it in a
+ * subdependency (`ERR_PNPM_EXOTIC_SUBDEP`; `blockExoticSubdeps` defaults to on
+ * and can only be turned off in `pnpm-workspace.yaml`, which a `-g` install has
+ * none of), and npm 12 rejects it anywhere (`EALLOWREMOTE`; `allow-remote=none`
+ * by default). `npm:` aliases resolve from the registry, so they are fine.
+ */
+export const EXOTIC_SPECIFIER = /^(https?|git|git\+[a-z]+|ssh|github|codeload):|^git@[^/]+:/i;
+
+/**
+ * One failure string per exotic specifier in a consumer-installed runtime
+ * field of a publishable manifest, naming the manifest, field and dep. Private
+ * manifests and devDependencies are skipped: a consumer installs neither.
+ * See change: fix-npm12-remote-tarball-install.
+ */
+export function checkRegistrySpecifiers(manifests) {
+  const failures = [];
+  for (const { path: rel, pkg } of manifests ?? []) {
+    if (pkg?.private === true) continue;
+    for (const field of ["dependencies", "peerDependencies", "optionalDependencies"]) {
+      for (const [dep, spec] of Object.entries(pkg?.[field] ?? {})) {
+        if (!EXOTIC_SPECIFIER.test(String(spec))) continue;
+        failures.push(
+          `Exotic: ${rel} ${field}.${dep}="${spec}" — a URL/git specifier breaks consumer installs ` +
+            "(pnpm ERR_PNPM_EXOTIC_SUBDEP, npm 12 EALLOWREMOTE); use a registry range or an npm: alias",
+        );
+      }
+    }
+  }
+  return failures;
+}
+
+/**
  * The publishable manifests that may declare pi ranges: the root
  * `package.json` (a published pi package) plus every `packages/*` manifest.
  * Returns `[{ path, pkg }]` with repo-relative paths. A missing root manifest
@@ -490,6 +523,7 @@ try {
     const floor = serverPkg?.piCompatibility?.minimum;
     if (floor) failures.push(...checkPiRangeShapes(manifests, floor));
     failures.push(...checkForbiddenPiPackages(manifests));
+    failures.push(...checkRegistrySpecifiers(manifests));
   } catch (err) {
     failures.push(`Cannot check pi pin coherence: ${err.message}`);
   }
