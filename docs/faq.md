@@ -124,6 +124,55 @@ Cross-refs:
 - packages/server/src/cli.ts — `runForeground`
 - packages/shared/src/tool-registry/ — `ToolRegistry.resolve("pi")`
 
+## How do I install with pnpm?
+
+pnpm global install. Same package as npm path. One caveat on 0.9.0–0.10.0.
+
+Commands:
+```bash
+pnpm add -g @blackbelt-technology/pi-agent-dashboard
+pi-dashboard start
+```
+
+- Requires Node.js ≥ 22.19.0. `pnpm` on PATH.
+- Server binds `:8000`. Same bootstrap path as the npm install above.
+
+### pnpm 0.9.0–0.10.0 → `ERR_PNPM_EXOTIC_SUBDEP`
+
+Symptom — global install refuses the tree:
+
+```
+ERR_PNPM_EXOTIC_SUBDEP  Exotic dependency "xlsx" (resolved via url) is not allowed
+in subdependencies when blockExoticSubdeps is enabled
+```
+
+Cause: 0.9.0–0.10.0 `packages/server/package.json` pins `xlsx` to a URL tarball (`https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`). `xlsx` is transitive from a `-g` install. pnpm classifies URL tarballs as exotic subdeps. Global install has no `pnpm-workspace.yaml`, so the setting defaults to reject.
+
+Same workaround on 0.10.0. No behavioural difference.
+
+Workaround — command flag only:
+```bash
+pnpm add -g --config.block-exotic-subdeps=false @blackbelt-technology/pi-agent-dashboard
+```
+
+- Verified on pnpm 11.15.1 + pnpm 12.9.1. Resolves full tree, exit 0.
+- Only `--config.<key>=<value>` on the command line works. pnpm reads `blockExoticSubdeps` from `pnpm-workspace.yaml` alone; a `-g` install has no workspace file.
+
+NOT a fix — do not try these:
+- `block-exotic-subdeps=false` in `~/.npmrc`. Ignored.
+- `pnpm config set --global blockExoticSubdeps false`. Writes `~/Library/Preferences/pnpm/config.yaml`. Resolver ignores that key there.
+
+npm on 0.9.0–0.10.0: npm ≤ 11 works plain. npm 12 rejects the remote tarball with `EALLOWREMOTE` (`allow-remote=none` default). Bypass: `npm_config_allow_remote=all npm install -g @blackbelt-technology/pi-agent-dashboard`. See change: fix-npm12-remote-tarball-install.
+
+Release after 0.10.0 removes the flags. `xlsx` becomes `npm:@e965/xlsx@0.20.3` — registry alias for the same SheetJS 0.20.3 build, every code file byte-identical to the CDN tarball. No exotic dep → plain `pnpm add -g` + plain `npm install -g` (npm 12 defaults) both resolve.
+
+Cross-refs:
+- packages/server/package.json — `xlsx` dependency
+- openspec/changes/fix-npm12-remote-tarball-install/
+- README.md — "B — pi package", npm install command
+- docs/pnpm-workspace.yaml.AGENTS.md — `blockExoticSubdeps` lives in workspace file
+- docs/faq.md — "How do I install pi-dashboard without Electron?"
+
 ## How do I install from source for development?
 
 Path C. Clone repo, install deps, register as pi package.

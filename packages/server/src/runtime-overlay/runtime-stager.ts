@@ -194,8 +194,9 @@ async function installFromNpm(version: string, partial: string, deps: StagerDeps
   fs.writeFileSync(path.join(partial, "package-lock.json"), root.packageLock);
   fs.rmSync(work, { recursive: true, force: true });
   progress({ version, phase: "install", message: "npm ci --omit=dev" });
-  // --allow-remote=all: npm 12 defaults to `none` and refuses URL-tarball deps
-  // (xlsx from cdn.sheetjs.com). Safe: every lock entry pins its integrity.
+  // --allow-remote=all: npm 12 defaults to `none` and refuses the tarballs the
+  // release lock is generated with (`bundleDependencies`, e.g.
+  // @tailwindcss/oxide-wasm32-wasi). Safe: every lock entry pins its integrity.
   await deps.runNpm(["ci", "--omit=dev", "--no-audit", "--no-fund", "--allow-remote=all"], partial, (line) => progress({ version, phase: "install", message: line }));
   return lock.packages[`node_modules/${SERVER_PKG}`]?.integrity;
 }

@@ -16,6 +16,19 @@ see [`docs/release-process.md`](docs/release-process.md).
 
 ### Fixed
 
+- **`pnpm add -g` works again, and npm 12 `install -g` works at all.** The server declared
+  `xlsx` as a CDN tarball (`https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`). Both
+  installers reject a URL tarball in a *transitive* dependency — pnpm with
+  `ERR_PNPM_EXOTIC_SUBDEP` (`blockExoticSubdeps` defaults to on, and a global install has no
+  `pnpm-workspace.yaml` to relax it in), npm 12 with `EALLOWREMOTE` (`allow-remote=none`) — so
+  no global install worked on a current pnpm, and none on npm 12. It is now the registry alias
+  `npm:@e965/xlsx@0.20.3`: a repack whose every code file is byte-identical to the official
+  0.20.3 build, with the version pin and spreadsheet-preview behaviour unchanged. Every release
+  through 0.10.0 still needs `pnpm add -g --config.block-exotic-subdeps=false …` (see the FAQ);
+  the fix lands after 0.10.0. The pre-release dependency gate now fails on any URL or git
+  specifier in a published runtime dependency, and the Claude-plugin bootstrap no longer sets
+  `npm_config_allow_remote`.
+
 ## [0.10.0] - 2026-10-20
 
 ### Added

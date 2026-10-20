@@ -32,6 +32,8 @@ Gains "Why is my project `mcp.json` server ignored (inactive) in a folder?" → 
 
 Gains browser-E2E baseline section: #683 quarantine re-derive commands, cluster → owner change map, unquarantine rule (CANDIDATE clusters only), trust isolation (`narrowTrust`, scopes, refusal latch, fault specs), `OffBoxError` message. See change: triage-browser-e2e-offbox-poison.
 
+Gains "How do I install with pnpm?" → plain `pnpm add -g`; 0.9.0–0.10.0 `ERR_PNPM_EXOTIC_SUBDEP` (URL-tarball `xlsx` as exotic subdep, no workspace file on `-g`); sole workaround `--config.block-exotic-subdeps=false` on the command line; NOT fixes — `~/.npmrc` key + `pnpm config set --global`; npm 12 `EALLOWREMOTE` + `npm_config_allow_remote=all`; `npm:@e965/xlsx@0.20.3` alias in release after 0.10.0 drops all flags.
+
 ## Change history (moved from docs/AGENTS.md row)
 
 See change: add-acp-session-driver, electron-runtime-overlay-updates, update-pi-core-1-0-adopt-apis, migrate-mcp-to-pi-builtin. host-gate default enforce; pairing revoke/approve operator-only. See change: harden-server-request-surfaces. `local_proof_required` FAQ. See change: harden-trust-and-credential-boundaries. Plugin-config partial write keeps omitted keys. See change: fix-plugin-config-partial-write. Gains TS-loader FAQ: PI_DASHBOARD_TS_LOADER no-longer-supported + booted-under-jiti warns → pi-dashboard stop && pi-dashboard start. See change: strip-only-native-ts-loader.
