@@ -1,11 +1,12 @@
 /**
- * Settings › General › Session card sections — global on/off default per
- * session-card section, each row showing how many folders override it (so a
- * global flip never silently fails to take effect somewhere). Applies
- * immediately over WS (like the card legend menu), outside the unified Save
- * draft. Turning a section back ON sends `null` (inherit the built-in
- * visible default) so the global map stays sparse.
- * See change: configurable-session-card-sections (design D9).
+ * Settings › General › Card sections — global on/off default per card section,
+ * covering BOTH the session card and the directory card, each row showing how
+ * many folders override it (so a global flip never silently fails to take
+ * effect somewhere). Applies immediately over WS (like the card legend menu),
+ * outside the unified Save draft. Turning a section back ON sends `null`
+ * (inherit the built-in visible default) so the global map stays sparse.
+ * See changes: configurable-session-card-sections (design D9),
+ * add-folder-card-section-entry-points.
  */
 import { countFolderOverrides, resolveCardSectionVisible } from "@blackbelt-technology/pi-dashboard-shared/card-sections.js";
 import { useId } from "react";
@@ -32,13 +33,13 @@ export function CardSectionsSection() {
   return (
     <div data-testid="card-sections-settings">
       <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3 pb-1 border-b border-[var(--border-secondary)]">
-        {i18nT("cardSections.globalTitle", undefined, "Session card sections")}
+        {i18nT("cardSections.globalTitle", undefined, "Card sections")}
       </h2>
       <p className="text-xs text-[var(--text-tertiary)] mb-2">
         {i18nT(
           "cardSections.globalLead",
           undefined,
-          "Default for all folders. Folders can override each section in Directory Settings › Session cards. Changes apply immediately.",
+          "Default for all folders, for session cards and directory cards alike. Folders can override each section in Directory Settings › Card sections. Changes apply immediately.",
         )}
       </p>
       <FocusNotice />

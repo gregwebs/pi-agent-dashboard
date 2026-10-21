@@ -1,7 +1,7 @@
 # Session actions menu
 
 Desktop session card. One grouped menu replaces the card action chips.
-Change: add-session-actions-flyout. Decisions cited as D1–D13 in `openspec/changes/add-session-actions-flyout/design.md`.
+Change: add-session-actions-flyout, add-folder-card-section-entry-points. Decisions cited as D1–D13 in `openspec/changes/add-session-actions-flyout/design.md`.
 
 ## 1. What it is
 
@@ -55,8 +55,10 @@ GIT:
 - Worktree actions: Push, Open PR / View PR #N, Merge (not when NEXT), Close worktree….
 
 VIEW:
-- `Card sections…` → Session cards page of group folder (`gitWorktree.mainPath` for worktree sessions, else session cwd).
-- `Card section defaults…` → global Session cards defaults in Settings.
+- `Card sections…` → Card sections page of group folder (`gitWorktree.mainPath` for worktree sessions, else session cwd). Target `buildFolderSettingsUrl(cwd, "cards")`.
+- `Card section defaults…` → global Card sections defaults in Settings. Target `/settings/general`.
+- Folder actions menu mirrors both, group `directory`: ids `card-sections` / `card-defaults`, testids `folder-menu-item-card-sections` / `folder-menu-item-card-defaults`. Same two targets.
+- Why: same page gates directory-card blocks (`folder-git`, `folder-banner`, `folder-openspec`, `folder-create`, `folder-ended`) + plugin pills `pill-<pluginId>`. See change: add-folder-card-section-entry-points.
 
 Stays on card (not moved into menu):
 - MEMORY subcard content.

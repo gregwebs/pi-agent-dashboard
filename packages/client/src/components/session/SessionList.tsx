@@ -6,7 +6,7 @@ import type { GroupByMode, GroupByPrefs, LaneId, StatusLaneId } from "@blackbelt
 import type { CommandInfo, DashboardSession, ImageContent, OpenSpecData, OpenSpecGroup } from "@blackbelt-technology/pi-dashboard-shared/types.js";
 import { DndContext, type DragEndEvent, type DragOverEvent, type DragStartEvent, MeasuringStrategy, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { mdiArchiveOutline, mdiBroom, mdiChevronDown, mdiChevronRight, mdiChevronUp, mdiClipboardCheckOutline, mdiClose, mdiCog, mdiConsoleLine, mdiFileDocumentOutline, mdiFolder, mdiFolderOpen, mdiPin, mdiPlus, mdiPuzzleOutline, mdiRefresh, mdiSourceBranch, mdiTextBoxCheckOutline, mdiViewGridPlus } from "@mdi/js";
+import { mdiArchiveOutline, mdiBroom, mdiCardsOutline, mdiChevronDown, mdiChevronRight, mdiChevronUp, mdiClipboardCheckOutline, mdiClose, mdiCog, mdiConsoleLine, mdiFileDocumentOutline, mdiFolder, mdiFolderOpen, mdiPin, mdiPlus, mdiPuzzleOutline, mdiRefresh, mdiSourceBranch, mdiTextBoxCheckOutline, mdiTune, mdiViewGridPlus } from "@mdi/js";
 import { Icon } from "@mdi/react";
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -22,7 +22,7 @@ import { resolveWorktreeAvailability } from "../../lib/git/folder-worktree-avail
 import type { WorktreeInitStatus } from "../../lib/git/git-api.js";
 import { t as i18nT, useI18n } from "../../lib/i18n/i18n.js";
 import { compatibleClosestCenter, resolveFolderMove, resolveWorkspaceFolderReorder, resolveWorkspaceReorder, SPRING_LOAD_DWELL_MS } from "../../lib/layout/sidebar-dnd.js";
-import { buildFolderHomeUrl } from "../../lib/nav/route-builders.js";
+import { buildFolderHomeUrl, buildFolderSettingsUrl } from "../../lib/nav/route-builders.js";
 import { removeOpenSpecOptOut } from "../../lib/openspec/openspec-config-api.js";
 // TerminalCard removed — terminals now in TerminalsView
 import {
@@ -1882,6 +1882,27 @@ export function SessionList({ sessions, selectedId, onSelect: onSelectProp, reve
       label: t("folders.directorySettings", undefined, "Directory Settings"),
       icon: mdiCog,
       onSelect: () => onOpenDirectorySettings?.(group.cwd),
+    });
+    // The same two destinations the SESSION card's VIEW group offers, mirrored
+    // on the folder card: the session card is not the only card with
+    // toggleable sections — the directory card's own blocks (plugin pills,
+    // OpenSpec pill, git row, setup banner, create buttons, ended row) are
+    // configured on the same page. Without these the only route in was
+    // Directory Settings' default sub-page, so the directory-card switches read
+    // as non-existent. See change: add-folder-card-section-entry-points.
+    items.push({
+      id: "card-sections",
+      group: "directory",
+      label: t("sessionMenu.cardSections", undefined, "Card sections…"),
+      icon: mdiCardsOutline,
+      onSelect: () => navigate(buildFolderSettingsUrl(group.cwd, "cards")),
+    });
+    items.push({
+      id: "card-defaults",
+      group: "directory",
+      label: t("sessionMenu.cardDefaults", undefined, "Card section defaults…"),
+      icon: mdiTune,
+      onSelect: () => navigate("/settings/general"),
     });
     // Permanent Project setup item: the banner carries urgency, the menu carries
     // availability. Tally `n/N` from the checklist (5 artifacts); `● update`

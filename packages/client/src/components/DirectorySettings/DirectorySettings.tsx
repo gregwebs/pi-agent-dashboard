@@ -64,7 +64,7 @@ export function DirectorySettings({ cwd, page, onBack }: Props) {
     { id: "instructions", label: i18nT("common.instructions", undefined, "Instructions"), icon: mdiFileDocumentOutline },
     { id: "add-ons", label: i18nT("settings.addons", undefined, "Add-ons"), icon: mdiPackageVariant },
     // See change: configurable-session-card-sections (D9).
-    { id: "cards", label: i18nT("cardSections.pageTitle", undefined, "Session cards"), icon: mdiCardsOutline },
+    { id: "cards", label: i18nT("cardSections.pageTitle", undefined, "Card sections"), icon: mdiCardsOutline },
   ];
   const resourceItems: { id: DirectorySettingsResourcePage; label: string; icon: string }[] = [
     { id: "skills", label: i18nT("common.skills", undefined, "Skills"), icon: mdiBookOpenPageVariant },
