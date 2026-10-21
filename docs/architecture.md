@@ -5017,13 +5017,15 @@ The dashboard server has one TypeScript loader: Node-native, strip-only. Entry: 
 
 | Tier | Node | Registration | Stripper |
 |---|---|---|---|
-| 1 | 22.15+, 23.5+, 24, 25, 26 | `module.registerHooks` (sync, in-thread) | `module.stripTypeScriptTypes` |
-| 2 | 23.2–23.4 (EOL) | `module.register` (off-thread) | `module.stripTypeScriptTypes` |
+| 1 | 24, 25, 26 | `module.registerHooks` (sync, in-thread) | `module.stripTypeScriptTypes` |
+| 2 | 22.19+ or 23.x (see below) | `module.register` (off-thread) | `module.stripTypeScriptTypes` |
 | 3 | 23.0–23.1 (EOL) | `module.register` | bundled `amaro` (exact pin `1.2.1`, dep of `pi-dashboard-shared`, lazy-loaded) |
+
+**Tier 1 major-gated** (`SYNC_HOOKS_MIN_MAJOR = 24`, `native-ts-tier.mjs`): presence of `registerHooks` alone insufficient. Node 22/23 expose `registerHooks` but take tier 2. On Node 23.11.0 sync in-thread hooks corrupt process-wide CommonJS `require()` interop; server dies before binding any port. Two signatures: `TypeError: semver.satisfies is not a function` at `jsonwebtoken/lib/asymmetricKeyDetailsSupported.js:3` (repo boot); `TypeError: Cannot read properties of undefined (reading 'exports')` at `@fastify/static/index.js:12` (published global install, `require('glob')`). Same loader code on Node 26.12.0 boots clean → defect property of that Node line, not of the hooks; no hook-side detection or undo (`registerHooks` has no unregister). Corroboration: `pi-dashboard-shared@0.9.0` shipped no `native-ts-tier.mjs` (always `module.register`) → booted on the affected machine; 0.10.0 did not. Tier 1 starts at 24 until 22/23 verified clean. Signature `selectLoaderTier(mod, nodeVersion = process.version)`; tests pass explicit versions (`v23.11.0`→2, `v26.12.0`→1) + CommonJS-interop fallback regression.
 
 **Why strip mode on `registerHooks`:** Node 26 removes transform mode and deprecates `module.register` (DEP0205). Strip mode on `registerHooks` is the only path valid on 26 and runs sync in-thread. `ExperimentalWarning` from `stripTypeScriptTypes` suppressed (that warning only).
 
-**Why native (not jiti):** jiti cache dir `resources/server/node_modules/.cache/jiti` read-only on FUSE-mounted AppImage → every launch cold-transpiles → >240 s boot on Ubuntu 22.04. Native boots in 3–5 s (spike CI runs 37285545559, 37286703495). See changes: `fix-appimage-cold-boot-latency`, `strip-only-native-ts-loader`.
+**Why native (not jiti):** jiti cache dir `resources/server/node_modules/.cache/jiti` read-only on FUSE-mounted AppImage → every launch cold-transpiles → >240 s boot on Ubuntu 22.04. Native boots in 3–5 s (spike CI runs 37285545559, 37286703495). See changes: `fix-appimage-cold-boot-latency`, `strip-only-native-ts-loader`, `fix-node23-sync-hooks-cjs-interop`.
 
 **Removed:** jiti server loader. `selectTsLoader`, `nativeTransformSupported`, `ToolResolver.resolveJiti`, `JitiNotFoundError` deleted. No rollback switch.
 

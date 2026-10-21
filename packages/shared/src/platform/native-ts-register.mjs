@@ -1,8 +1,12 @@
 // Node-native TypeScript loader — the dashboard server's `--import` loader.
 // Strips types (strip-only) and registers the resolve/load hooks in
 // `native-ts-hooks.mjs` on the best API this Node offers (tier, design D4):
-// `module.registerHooks` (sync, in-thread), else `module.register` with the
-// native stripper, else `module.register` with the bundled `amaro` (EOL 23.0-23.1).
+// `module.registerHooks` (sync, in-thread) on Node >= 24, else `module.register`
+// with the native stripper, else `module.register` with the bundled `amaro`
+// (EOL 23.0-23.1). Node 22/23 take the off-thread tier even though they expose
+// `registerHooks`: on 23.11 the sync hooks corrupt process-wide CommonJS
+// `require()` interop and the server dies before binding a port.
+// See `native-ts-tier.mjs` for the evidence.
 // No transpile cache, so a read-only bundle (FUSE-mounted AppImage) boots as
 // fast as a writable one.
 //

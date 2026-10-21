@@ -550,7 +550,7 @@ PowerShell:
 Select-String -Path "$HOME\.pi\dashboard\server.log" -SimpleMatch "launch (parent pid" | Select-Object -Last 1
 ```
 
-Node < 22.19 unsupported by the server — server enforces floor `>= 22.19` (`engines` `>=22.19.0`, `packages/shared/src/node-version.ts`); upgrade Node. A Node with neither `module.registerHooks` nor `module.register` fails at boot (`native-ts-register.mjs` throws, naming the Node version). Node without `module.stripTypeScriptTypes` uses tier 2 or tier 3 (bundled `amaro` on 23.0–23.1).
+Node < 22.19 unsupported by the server — server enforces floor `>= 22.19` (`engines` `>=22.19.0`, `packages/shared/src/node-version.ts`); upgrade Node. A Node with neither `module.registerHooks` nor `module.register` fails at boot (`native-ts-register.mjs` throws, naming the Node version). Node without `module.stripTypeScriptTypes` uses tier 2 or tier 3 (bundled `amaro` on 23.0–23.1). Node 22/23 use tier 2 even though they expose `registerHooks`: on 23.11 sync hooks break CommonJS `require()` (`semver.satisfies is not a function`, `@fastify/static` → `glob`) and server never binds a port; tier 1 starts at Node 24 (`SYNC_HOOKS_MIN_MAJOR`).
 
 Cross-refs:
 - packages/shared/src/platform/ts-loader-select.mjs
