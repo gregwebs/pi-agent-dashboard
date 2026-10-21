@@ -13,6 +13,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -191,15 +192,45 @@ describe("native-ts-register tiers", () => {
     expect(res.stderr).toContain("e.ts");
   });
 
-  // #E1 — decision table for the tier selector.
+  // #E1 — decision table for the tier selector. Versions are explicit: tier 1 is
+  // MAJOR-GATED (fix-node23-sync-hooks-cjs-interop), so a bare `selectLoaderTier(mod)`
+  // would assert different tiers on a Node 22/23 CI runner than on 26.
   it.each([
-    [true, true, 1],
-    [false, true, 2],
-    [false, false, 3],
-    [true, false, 3],
-  ] as const)("E1: registerHooks=%s stripTypeScriptTypes=%s → tier %s", (hooks, strip, tier) => {
+    ["v26.12.0", true, true, 1],
+    ["v24.0.0", true, true, 1],
+    // Node 23.x sync hooks corrupt process-wide CommonJS interop → off-thread tier.
+    ["v23.11.0", true, true, 2],
+    ["v23.5.0", true, true, 2],
+    ["v22.20.0", true, true, 2],
+    ["v26.12.0", false, true, 2],
+    ["v26.12.0", false, false, 3],
+    ["v26.12.0", true, false, 3],
+    ["garbage", true, true, 2],
+  ] as const)("E1: node=%s registerHooks=%s stripTypeScriptTypes=%s → tier %s", (version, hooks, strip, tier) => {
     const mod = { ...(hooks ? { registerHooks: () => {} } : {}), ...(strip ? { stripTypeScriptTypes: () => "" } : {}) };
-    expect(selectLoaderTier(mod)).toBe(tier);
+    expect(selectLoaderTier(mod, version)).toBe(tier);
+  });
+
+  it("E1b: defaults to the running Node when no version is passed", () => {
+    const mod = { registerHooks: () => {}, stripTypeScriptTypes: () => "" };
+    const major = Number(/^v(\d+)\./.exec(process.version)?.[1] ?? 0);
+    expect(selectLoaderTier(mod)).toBe(major >= 24 ? 1 : 2);
+  });
+
+  // Regression for fix-node23-sync-hooks-cjs-interop: a CommonJS package whose
+  // own `require()` chain must keep working. On Node 23.11 under tier 1 this is
+  // exactly what broke at boot (`jsonwebtoken` → `require('semver')`), so the
+  // off-thread fallback tier has to preserve it.
+  it("E1c: the fallback tier keeps CommonJS require() interop intact", () => {
+    const cjsEntry = createRequire(import.meta.url).resolve("jsonwebtoken");
+    const dir = fixture({
+      "a.ts": `import jwt from ${JSON.stringify(cjsEntry)};\nconsole.log(typeof jwt.sign);\n`,
+      "preload.mjs": prelude(["registerHooks"]),
+    });
+    const res = run(dir, "a.ts", [pathToFileURL(path.join(dir, "preload.mjs")).href]);
+    expect(res.stderr).not.toMatch(/Cannot read properties|is not a function/);
+    expect(res.status).toBe(0);
+    expect(res.stdout.trim()).toBe("function");
   });
 });
 

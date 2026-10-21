@@ -95,10 +95,10 @@ describe("DirectorySettings", () => {
   });
 
   // See change: configurable-session-card-sections.
-  it("renders the Session cards page on the cards page, with a nav item", () => {
+  it("renders the Card sections page on the cards page, with a nav item", () => {
     renderAt("cards");
     expect(screen.getByTestId("card-sections-page")).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Session cards/ }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("button", { name: /Card sections/ }).getAttribute("aria-current")).toBe("page");
   });
 
   it("renders the Add-ons surface on the add-ons page", async () => {

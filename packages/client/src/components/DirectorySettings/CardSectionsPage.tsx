@@ -1,12 +1,16 @@
 /**
- * Directory Settings › Session cards — per-folder session-card section
- * visibility. One tri-state control per section (Default (<global>) / Show /
- * Hide) writing SPARSE overrides (`Default` sends `null` = inherit), grouped
- * Sections / Plugin sections / Card lines, override badges, `Reset to global`,
- * and a synthetic live preview built from the same resolver as the cards.
- * Plugin rows render only when an installed plugin claims the section's slot.
- * Writes apply immediately (server-authoritative, synced to every browser).
- * See change: configurable-session-card-sections (design D9).
+ * Directory Settings › Card sections — per-folder SECTION visibility for BOTH
+ * card kinds: session-card sections (top groups) and the directory card's own
+ * blocks (the `directory` group: plugin pills, OpenSpec pill, git row, setup
+ * banner, create buttons, ended row). One tri-state control per section
+ * (Default (<global>) / Show / Hide) writing SPARSE overrides (`Default` sends
+ * `null` = inherit), grouped Sections / Plugin sections / Card lines / Directory
+ * card, override badges, `Reset to global`, and a synthetic live preview built
+ * from the same resolver as the cards. Plugin rows render only when an
+ * installed plugin claims the section's slot. Writes apply immediately
+ * (server-authoritative, synced to every browser).
+ * See changes: configurable-session-card-sections (design D9),
+ * add-folder-card-section-entry-points.
  */
 import {
   type CardSectionPrefs,
@@ -134,13 +138,13 @@ export function CardSectionsPage({ cwd }: { cwd: string }) {
     <div className="p-4 md:p-6 flex flex-col lg:flex-row gap-6" data-testid="card-sections-page">
       <div className="flex-1 min-w-0 max-w-2xl">
         <h2 className="text-base font-bold text-[var(--text-primary)]">
-          {i18nT("cardSections.pageTitle", undefined, "Session cards")}
+          {i18nT("cardSections.pageTitle", undefined, "Card sections")}
         </h2>
         <p className="text-xs text-[var(--text-tertiary)] mt-1 mb-4">
           {i18nT(
             "cardSections.pageLead",
             { folder: cwd },
-            "Choose which sections appear on session cards in {folder} (and its worktrees). Applies on every device. Sections with nothing to show still hide automatically.",
+            "Choose which sections appear on session cards and on the directory card in {folder} (and its worktrees). Applies on every device. Sections with nothing to show still hide automatically.",
           )}
         </p>
 

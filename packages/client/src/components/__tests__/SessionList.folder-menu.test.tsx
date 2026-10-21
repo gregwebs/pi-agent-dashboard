@@ -16,6 +16,7 @@ import type React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
+import { buildFolderSettingsUrl } from "../../lib/nav/route-builders.js";
 import { SessionList } from "../session/SessionList.js";
 import { ThemeProvider } from "../settings/ThemeProvider.js";
 
@@ -58,7 +59,7 @@ const session: DashboardSession = {
 const openspec: OpenSpecData = { initialized: true, changes: [] };
 
 function renderList(props: Partial<React.ComponentProps<typeof SessionList>> = {}, menuStore = createFolderMenuStore()) {
-  const { hook } = memoryLocation({ path: "/", static: true });
+  const { hook, history } = memoryLocation({ path: "/", record: true });
   render(
     <Router hook={hook}>
       <ThemeProvider>
@@ -68,7 +69,7 @@ function renderList(props: Partial<React.ComponentProps<typeof SessionList>> = {
       </ThemeProvider>
     </Router>,
   );
-  return menuStore;
+  return { menuStore, history };
 }
 
 function openMenu() {
@@ -174,6 +175,38 @@ describe("Pi Resources keeps exactly one home (test-plan #E13)", () => {
 
     fireEvent.click(settings);
     expect(onOpenDirectorySettings).toHaveBeenCalledWith(CWD);
+  });
+});
+
+/**
+ * The folder card is not the only card with toggleable sections: its own
+ * blocks (plugin pills, OpenSpec pill, git row, setup banner, create buttons,
+ * ended row) share the same page as the session-card sections. The folder menu
+ * therefore mirrors the SESSION card's VIEW group so the directory-card
+ * switches are reachable from the card that renders them.
+ * See change: add-folder-card-section-entry-points.
+ */
+describe("card-section entry points (add-folder-card-section-entry-points)", () => {
+  it("offers both destinations in the DIRECTORY group", () => {
+    renderList({});
+    openMenu();
+    const group = screen.getByTestId("folder-menu-group-directory");
+    expect(group.contains(screen.getByTestId("folder-menu-item-card-sections"))).toBe(true);
+    expect(group.contains(screen.getByTestId("folder-menu-item-card-defaults"))).toBe(true);
+  });
+
+  it("Card sections… opens the folder's Card sections page (directory-card rows included)", () => {
+    const { history } = renderList({});
+    openMenu();
+    fireEvent.click(screen.getByTestId("folder-menu-item-card-sections"));
+    expect(history.at(-1)).toBe(buildFolderSettingsUrl(CWD, "cards"));
+  });
+
+  it("Card section defaults… opens the global card-section defaults in Settings", () => {
+    const { history } = renderList({});
+    openMenu();
+    fireEvent.click(screen.getByTestId("folder-menu-item-card-defaults"));
+    expect(history.at(-1)).toBe("/settings/general");
   });
 });
 
